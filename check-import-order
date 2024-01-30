@@ -1,0 +1,8 @@
+#!/bin/sh -e
+
+TOOL_CMD=isort
+PATH=$(basename $0)/utils:$PATH
+TOOL_PATH=$(which $TOOL_CMD)
+
+echo "** Running $TOOL_CMD ($TOOL_PATH)..."
+$TOOL_PATH --check-only --profile black .

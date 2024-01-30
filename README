@@ -1,0 +1,10 @@
+This is avocado-static-checks, a collection of opinionated scripts
+that apply static quality checks to (mostly) Python code.  It was
+created to make the style of the Avocado (testing framework) and
+related projects consistent.
+
+These scripts simply wrap the functionality present in other tools,
+but add command line options or configuration files to make it ready
+to use, as long as one agrees with the choices made here.  If you
+don't quite agree with the exact configuration of checks here, it
+should be possible to overwrite the behavior of specific checks.
