@@ -1,0 +1,33 @@
+#!/bin/sh -e
+ERR=()
+
+run_rc() {
+    CHECK=$1
+    echo -e "\n\e[32mRunning '$1'\e[0m"
+    eval $*
+    if [ $? != 0 ]; then
+        echo -e "\e[31m$CHECK FAILED\e[0m"
+        ERR+=("$CHECK")
+    else
+        echo -e "\e[32m$CHECK PASSED\e[0m\n"
+    fi
+}
+
+for check in $(dirname $0)/check-*; do
+    run_rc $check
+done
+
+if [ "$ERR" ]; then
+    echo -e "\e[31m"
+    echo "Checks:"
+    for CHECK in "${ERR[@]}"; do
+        echo -e " * $CHECK FAILED"
+    done
+    echo -ne "\e[0m"
+else
+    echo -e "\e[32mAll checks PASSED\e[0m"
+fi
+if [ "$ERR" ]; then
+    exit 1
+fi
+exit 0
