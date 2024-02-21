@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+TOOL_CMD=pylint
+PATH=$(basename $0)/utils:$PATH
+TOOL_PATH=$(which pylint-3 2>/dev/null || which pylint)
+CONFIG_PATH="$(dirname $0)/default_configs/pylintrc"
+FILES=$(git ls-files '*.py')
+
+echo "** Running $TOOL_CMD ($TOOL_PATH using config from $CONFIG_PATH)..."
+$TOOL_PATH --rcfile=$CONFIG_PATH $FILES
