@@ -1,9 +1,26 @@
 #!/bin/sh -e
 
-TOOL_CMD=pylint
-PATH=$(basename $0)/utils:$PATH
+CONFIG_FILE="../.avocado_static_checks.conf"
+DEFAULT_CONFIG_PATH="default_configs/pylintrc"
 CONFIG_PATH="$(dirname $0)/default_configs/pylintrc"
+
+get_config() {
+    local file_path="$1"
+    if [ -f "$CONFIG_FILE" ]; then
+        while IFS=':' read -r pattern config; do
+            if [[ "$file_path" == $pattern* ]]; then
+                echo "$config"
+                return
+            fi
+        done < "$CONFIG_FILE"
+    fi
+    echo "$DEFAULT_CONFIG_PATH"
+}
+
 FILES=$(git ls-files '*.py')
 
-echo "** Running $TOOL_CMD (using config from $CONFIG_PATH)..."
-python3 -m pylint --rcfile=$CONFIG_PATH $FILES
+for file in $FILES; do
+    CONFIG_PATH=$(get_config "$file")
+    echo "** Running pylint (using config from $CONFIG_PATH) on $file..."
+    python3 -m pylint --rcfile="$CONFIG_PATH" "$file"
+done
