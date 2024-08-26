@@ -1,9 +1,102 @@
 #!/bin/sh -e
 
 TOOL_CMD=pylint
-PATH=$(basename $0)/utils:$PATH
-CONFIG_PATH="$(dirname $0)/default_configs/pylintrc"
-FILES=$(git ls-files '*.py')
+BASE_DIR=$(dirname "$0")
+CONFIG_FILE="$BASE_DIR/../avocado-static-checks.conf"
 
-echo "** Running $TOOL_CMD (using config from $CONFIG_PATH)..."
-python3 -m pylint --rcfile=$CONFIG_PATH $FILES
+# Default config path
+DEFAULT_CONFIG_PATH="$BASE_DIR/default_configs/pylintrc"
+
+# Collect all Python files in the repository
+ALL_FILES=$(git ls-files '*.py')
+
+# Initialize an array to store files checked with custom configs
+checked_files=()
+
+# Check if the avocado-static-checks.conf file exists
+if [ -f "$CONFIG_FILE" ]; then
+    echo "Found configuration file: $CONFIG_FILE"
+
+    # Initialize a flag to track if we're within the [lint] section
+    in_lint_section=false
+
+    # Read and process each line in the config file
+    while IFS=':' read -r directory config_path || [ -n "$directory" ]; do
+        # Skip empty lines
+        if [ -z "$directory" ] && [ -z "$config_path" ]; then
+            continue
+        fi
+
+        # Exit with an error if no directory is specified before the colon
+        if [ -z "$directory" ]; then
+            echo "Error: No directory specified before the colon in the config file."
+            exit 1
+        fi
+
+        # Handle section headers
+        if [[ "$directory" =~ ^\s*\[lint\]\s*$ ]]; then
+            in_lint_section=true
+            continue
+        elif [[ "$directory" =~ ^\s*\[.*\]\s*$ ]]; then
+            in_lint_section=false
+            continue
+        fi
+
+        # Process lines only within the [lint] section
+        if $in_lint_section; then
+            # Trim whitespace
+            CONFIG_PATH=$(echo "$config_path" | xargs)
+            DIRECTORY_PATH=$(echo "$directory" | xargs)
+
+            # Skip if either directory or config_path is empty
+            if [ -z "$DIRECTORY_PATH" ] || [ -z "$CONFIG_PATH" ]; then
+                echo "Error: Invalid line in the config file."
+                exit 1
+            fi
+
+            # Check if the directory exists
+            if [ ! -d "$BASE_DIR/../$DIRECTORY_PATH" ]; then
+                echo "Error: Directory '$DIRECTORY_PATH' specified in the config file does not exist."
+                exit 1
+            fi
+
+            # Check if the config path exists
+            if [ ! -f "$BASE_DIR/../$CONFIG_PATH" ]; then
+                echo "Error: Config file '$CONFIG_PATH' specified for directory '$DIRECTORY_PATH' does not exist."
+                exit 1
+            fi
+
+            # Get all Python files in the specified directory
+            FILES=$(git ls-files "$DIRECTORY_PATH/*.py")
+
+            if [ -n "$FILES" ]; then
+                echo "** Running $TOOL_CMD on directory '$DIRECTORY_PATH' with config from '$CONFIG_PATH'..."
+                python3 -m pylint --rcfile="$BASE_DIR/../$CONFIG_PATH" $FILES
+
+                # Add the files to the custom config list
+                for file in $FILES; do
+                    checked_files+=("$file")
+                done
+            fi
+        fi
+    done < "$CONFIG_FILE"
+else
+    # If the configuration file does not exist, print a message and use default config for all files
+    echo "Configuration file '$CONFIG_FILE' not found. Running $TOOL_CMD with default config on all files..."
+    python3 -m pylint --rcfile="$DEFAULT_CONFIG_PATH" $ALL_FILES
+    exit 0
+fi
+
+# Calculate remaining files that weren't checked with a custom config
+remaining_files=()
+
+for file in $ALL_FILES; do
+    if [[ ! " ${checked_files[*]} " =~ " $file " ]]; then
+        remaining_files+=("$file")
+    fi
+done
+
+if [ ${#remaining_files[@]} -gt 0 ]; then
+    echo "** Running $TOOL_CMD with default config on remaining files..."
+    python3 -m pylint --rcfile="$DEFAULT_CONFIG_PATH" "${remaining_files[@]}"
+fi
