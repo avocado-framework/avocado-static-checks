@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
-TOOL_CMD=pylint
+TOOL_NAME=pylint
+TOOL_CMD="python3 -m $TOOL_NAME"
 BASE_DIR=$(dirname "$0")
 CONFIG_FILE="$BASE_DIR/../avocado-static-checks.conf"
 
@@ -70,8 +71,8 @@ if [ -f "$CONFIG_FILE" ]; then
             FILES=$(git ls-files "$DIRECTORY_PATH/" | grep -e '.py$')
 
             if [ -n "$FILES" ]; then
-                echo "** Running $TOOL_CMD on directory '$DIRECTORY_PATH' with config from '$CONFIG_PATH'..."
-                python3 -m pylint --rcfile="$BASE_DIR/../$CONFIG_PATH" $FILES
+                echo "** Running $TOOL_NAME on directory '$DIRECTORY_PATH' with config from '$CONFIG_PATH'..."
+                $TOOL_CMD --rcfile="$BASE_DIR/../$CONFIG_PATH" $FILES
 
                 # Add the files to the custom config list
                 for file in $FILES; do
@@ -82,8 +83,8 @@ if [ -f "$CONFIG_FILE" ]; then
     done < "$CONFIG_FILE"
 else
     # If the configuration file does not exist, print a message and use default config for all files
-    echo "Configuration file '$CONFIG_FILE' not found. Running $TOOL_CMD with default config on all files..."
-    python3 -m pylint --rcfile="$DEFAULT_CONFIG_PATH" $ALL_FILES
+    echo "Configuration file '$CONFIG_FILE' not found. Running $TOOL_NAME with default config on all files..."
+    $TOOL_CMD --rcfile="$DEFAULT_CONFIG_PATH" $ALL_FILES
     exit 0
 fi
 
@@ -97,6 +98,6 @@ for file in $ALL_FILES; do
 done
 
 if [ ${#remaining_files[@]} -gt 0 ]; then
-    echo "** Running $TOOL_CMD with default config on remaining files..."
-    python3 -m pylint --rcfile="$DEFAULT_CONFIG_PATH" "${remaining_files[@]}"
+    echo "** Running $TOOL_NAME with default config on remaining files..."
+    $TOOL_CMD --rcfile="$DEFAULT_CONFIG_PATH" "${remaining_files[@]}"
 fi

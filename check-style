@@ -1,8 +1,7 @@
 #!/bin/sh -e
 
-TOOL_CMD=black
-PATH=$(basename $0)/utils:$PATH
-TOOL_PATH=$(which $TOOL_CMD)
+TOOL_NAME=black
+TOOL_CMD="python3 -m black"
 
-echo "** Running $TOOL_CMD ($TOOL_PATH)..."
-$TOOL_PATH --check --diff --color .
+echo "** Running $TOOL_NAME..."
+$TOOL_CMD --check --diff --color .
