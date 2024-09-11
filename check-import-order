@@ -1,8 +1,7 @@
 #!/bin/sh -e
 
-TOOL_CMD=isort
-PATH=$(basename $0)/utils:$PATH
-TOOL_PATH=$(which $TOOL_CMD)
+TOOL_NAME=isort
+TOOL_CMD="python3 -m $TOOL_NAME"
 
-echo "** Running $TOOL_CMD ($TOOL_PATH)..."
-$TOOL_PATH --check-only --profile black .
+echo "** Running $TOOL_NAME..."
+$TOOL_CMD --check-only --profile black .
