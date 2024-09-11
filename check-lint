@@ -67,7 +67,7 @@ if [ -f "$CONFIG_FILE" ]; then
             fi
 
             # Get all Python files in the specified directory
-            FILES=$(git ls-files "$DIRECTORY_PATH/*.py")
+            FILES=$(git ls-files "$DIRECTORY_PATH/" | grep -e '.py$')
 
             if [ -n "$FILES" ]; then
                 echo "** Running $TOOL_CMD on directory '$DIRECTORY_PATH' with config from '$CONFIG_PATH'..."
