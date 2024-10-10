@@ -14,6 +14,9 @@ ALL_FILES=$(git ls-files '*.py')
 # Initialize an array to store files checked with custom configs
 checked_files=()
 
+# Initialize an overall exit status to track pylint failures
+overall_exit_status=0
+
 # Check if the avocado-static-checks.conf file exists
 if [ -f "$CONFIG_FILE" ]; then
     echo "Found configuration file: $CONFIG_FILE"
@@ -72,7 +75,9 @@ if [ -f "$CONFIG_FILE" ]; then
 
             if [ -n "$FILES" ]; then
                 echo "** Running $TOOL_NAME on directory '$DIRECTORY_PATH' with config from '$CONFIG_PATH'..."
-                $TOOL_CMD --rcfile="$BASE_DIR/../$CONFIG_PATH" $FILES
+                if ! $TOOL_CMD --rcfile="$BASE_DIR/../$CONFIG_PATH" $FILES; then
+                    overall_exit_status=1  # Set to 1 if there were any issues
+                fi
 
                 # Add the files to the custom config list
                 for file in $FILES; do
@@ -84,8 +89,11 @@ if [ -f "$CONFIG_FILE" ]; then
 else
     # If the configuration file does not exist, print a message and use default config for all files
     echo "Configuration file '$CONFIG_FILE' not found. Running $TOOL_NAME with default config on all files..."
-    $TOOL_CMD --rcfile="$DEFAULT_CONFIG_PATH" $ALL_FILES
-    exit 0
+    if ! $TOOL_CMD --rcfile="$DEFAULT_CONFIG_PATH" $ALL_FILES; then
+        overall_exit_status=1  # Set to 1 if there were any issues
+    fi
+
+    exit $overall_exit_status
 fi
 
 # Calculate remaining files that weren't checked with a custom config
@@ -99,5 +107,10 @@ done
 
 if [ ${#remaining_files[@]} -gt 0 ]; then
     echo "** Running $TOOL_NAME with default config on remaining files..."
-    $TOOL_CMD --rcfile="$DEFAULT_CONFIG_PATH" "${remaining_files[@]}"
+    if ! $TOOL_CMD --rcfile="$DEFAULT_CONFIG_PATH" "${remaining_files[@]}"; then
+        overall_exit_status=1
+    fi
 fi
+
+# Exit with the overall exit status
+exit $overall_exit_status
